@@ -1,0 +1,35 @@
+model:
+  arch: video_llama
+  model_type: pretrain_vicuna
+  freeze_vit: True
+  freeze_qformer: True
+  max_txt_len: 512
+  end_sym: "###"
+  #low_resource: True # False
+  #device_8bit: True
+
+  frozen_llama_proj: False
+
+  llama_model: "/mnt/e/llms/oogabooga_model/vicuna-7bv1.1"
+  # nfrms 16, 7B
+  ckpt: "askvideos_instruct_ft.pth"
+  equip_audio_branch: False
+
+  fusion_head_layers: 2
+  max_frame_pos: 32
+  fusion_header_type: "seqTransf"
+
+
+datasets:
+  webvid:
+    vis_processor:
+      train:
+        name: "alpro_video_eval"
+        n_frms: 8
+        image_size: 224
+    text_processor:
+      train:
+        name: "blip_caption"
+
+run:
+  task: video_text_pretrain
