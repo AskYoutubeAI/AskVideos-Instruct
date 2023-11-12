@@ -1,5 +1,5 @@
 """
-Adapted from: https://github.com/Vision-CAIR/MiniGPT-4/blob/main/demo.py
+Adapted from: https://github.com/DAMO-NLP-SG/Video-LLaMA/blob/main/demo_video.py
 """
 import argparse
 import os
@@ -16,6 +16,7 @@ import decord
 decord.bridge.set_bridge('torch')
 
 import pytube
+import yt_dlp
 
 def patch_pytube(pt):
     import xml.etree.ElementTree as ElementTree
@@ -163,7 +164,7 @@ from video_llama.models import *
 #%%
 def parse_args():
     parser = argparse.ArgumentParser(description="Demo")
-    parser.add_argument("--cfg-path", required=True, help="path to configuration file.")
+    parser.add_argument("--cfg-path", required=False, default="eval_configs/askvideos_instruct_ft.yaml", help="path to configuration file.")
     parser.add_argument("--gpu-id", type=int, default=0, help="specify the gpu to load the model.")
     parser.add_argument(
         "--options",
@@ -254,6 +255,19 @@ def select_en_captions(captions):
 def get_transcript(video):
     return parse_captions(select_en_captions(video.captions))
 
+def download_video(video_id, output_path):
+    video_path = f'{output_path}/{video_id}.mp4'
+    if os.path.exists(video_path):
+        return 
+    url = f'https://www.youtube.com/watch?v={video_id}'
+    ydl_opts = {
+        'format': 'best[height<=720]',
+        'outtmpl': f'{output_path}/%(id)s.%(ext)s'
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
+
 def download_yt_video(video_url, use_transcripts=True):
     yt_video = pytube.YouTube(video_url)
     video_id = yt_video.video_id
@@ -262,7 +276,9 @@ def download_yt_video(video_url, use_transcripts=True):
         os.makedirs(os.path.dirname(saved_video_path))
     print('downloading video')
     if not os.path.exists(saved_video_path):
-        saved_video_path = yt_video.streams.filter(only_video=True).order_by('resolution').asc().first().download(output_path=os.path.dirname(saved_video_path), filename=os.path.basename(saved_video_path))
+        download_video(video_id, os.path.dirname(saved_video_path))
+        # pytube video downloading is unreliable, using yt_dlp instead.
+        #saved_video_path = yt_video.streams.filter(only_video=True).order_by('resolution').desc().first().download(output_path=os.path.dirname(saved_video_path), filename=os.path.basename(saved_video_path))
     print('downloaded video')
     print(saved_video_path)
     print('downloading transcripts')
@@ -277,13 +293,13 @@ def download_yt_video(video_url, use_transcripts=True):
 def upload_video(gr_video, text_input, chat_state, chatbot, use_transcripts, transcript_path):
     if use_transcripts:
         transcript = json.load(open(transcript_path))
-        # TODO: Add transcript to video.
         print(transcript)
     chat_state = default_conversation.copy()
     if gr_video is not None:
         print(gr_video)
         chatbot = chatbot + [((gr_video,), None)]
-        chat_state.system =  "You are able to understand the visual content that the user provides. Follow the instructions carefully and explain your answers in detail."
+        #chat_state.system =  "You are able to understand the visual content that the user provides. Follow the instructions carefully and explain your answers in detail."
+        chat_state.system =  "You are able to understand the visual content that the user provides. Answer the questions from the video."
         img_list = []
         llm_message = chat.upload_video_without_audio(gr_video, chat_state, img_list, num_frames=16)
         if use_transcripts:
@@ -318,7 +334,7 @@ title = """
 
 <h1 align="center">AskVideos Instruct demo</h1>
 
-<h5 align="center">  Introduction: Ask-Videos Instruct is a based on the Video-LLaMA model and is finetuned with more data to work on YouTube videos.</h5> 
+<h5 align="center">  Introduction: Ask-Videos Instruct is a Video-Text model finetuned to work on YouTube videos.</h5> 
 
 """
 

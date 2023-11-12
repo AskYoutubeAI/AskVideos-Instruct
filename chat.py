@@ -1,5 +1,5 @@
 """
-Adapted from: https://github.com/Vision-CAIR/MiniGPT-4/blob/main/demo.py
+Adapted from: https://github.com/DAMO-NLP-SG/Video-LLaMA/blob/main/demo_video.py
 """
 import argparse
 import os
@@ -20,7 +20,7 @@ from video_llama.models import *
 #%%
 def parse_args():
     parser = argparse.ArgumentParser(description="Demo")
-    parser.add_argument("--cfg-path", required=True, help="path to configuration file.")
+    parser.add_argument("--cfg-path", required=False, default="eval_configs/askvideos_instruct_ft.yaml", help="path to configuration file.")
     parser.add_argument("--gpu-id", type=int, default=0, help="specify the gpu to load the model.")
     parser.add_argument(
         "--options",
@@ -66,7 +66,8 @@ def upload_video(gr_video, text_input, chat_state,chatbot):
     if gr_video is not None:
         print(gr_video)
         chatbot = chatbot + [((gr_video,), None)]
-        chat_state.system =  "You are able to understand the visual content that the user provides. Follow the instructions carefully and explain your answers in detail."
+        #chat_state.system =  "You are able to understand the visual content that the user provides. Follow the instructions carefully and explain your answers in detail."
+        chat_state.system =  "You are able to understand the visual content that the user provides. Answer the questions from the video."
         img_list = []
         llm_message = chat.upload_video_without_audio(gr_video, chat_state, img_list, num_frames=16)
         return gr.update(interactive=False), gr.update(interactive=True, placeholder='Type and press Enter'), gr.update(value="Start Chatting", interactive=False), chat_state, img_list,chatbot
